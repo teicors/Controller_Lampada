@@ -1,0 +1,2 @@
+C+ app/webserver.cpp
+/opt/SmingRTOS/sming/Makefile-project.mk:375: set di istruzioni per l'obiettivo "out/build/app/webserver.o" non riuscito
