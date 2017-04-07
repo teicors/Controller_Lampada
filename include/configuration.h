@@ -42,6 +42,13 @@
 #define SEND_PRESENCE 9999
 #define CONFIGURATION 9998
 
+#define LCD 0
+// 0 BN
+// 1 COLOR
+
+#define LCD_C     LOW
+#define LCD_D     HIGH
+
 struct LampConfig
 {
 	LampConfig()
@@ -74,11 +81,15 @@ struct LampMessage
     int evento, stato, valore, elemento;
 };
 
-void loadConfig();
-void saveConfig();
+extern void loadConfig();
+extern void saveConfig();
 extern void startWebClock();
 extern void flashleds();
 extern LampConfig ActiveConfig;
 extern void publishMessage(int evento, int linea, int tempo);
+extern void DisplayTime(uint8_t hour, uint8_t minutes, uint8_t seconds);
+extern void LcdInitialise(void);
+extern void LcdClear();
+extern void LcdWrite(uint8_t dc, uint8_t data);
 
 #endif /* INCLUDE_CONFIGURATION_H_ */

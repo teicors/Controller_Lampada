@@ -36,17 +36,43 @@
           <buildCommand>${MAKE} -f Makefile</buildCommand>
           <cleanCommand>${MAKE} -f Makefile clean</cleanCommand>
           <executablePath></executablePath>
+          <cTool>
+            <incDir>
+              <pElem>app</pElem>
+              <pElem>app/include</pElem>
+              <pElem>include</pElem>
+              <pElem>/opt/SmingRTOS/sming/include</pElem>
+              <pElem>/opt/SmingRTOS/sming</pElem>
+              <pElem>/opt/SmingRTOS/sming/rboot</pElem>
+              <pElem>/opt/esp-open-sdk/sdk/include</pElem>
+              <pElem>/opt/esp-open-sdk/sdk/extra_include</pElem>
+              <pElem>/opt/esp-open-sdk/sdk/include/lwip</pElem>
+              <pElem>/opt/esp-open-sdk/sdk/include/espressif</pElem>
+              <pElem>/opt/esp-open-sdk/sdk/include/lwip/ipv4</pElem>
+              <pElem>/opt/esp-open-sdk/sdk/include/lwip/ipv6</pElem>
+              <pElem>/opt/esp-open-sdk/sdk/include/freertos</pElem>
+              <pElem>.</pElem>
+            </incDir>
+            <preprocessorList>
+              <Elem>ARDUINO=106</Elem>
+              <Elem>COM_SPEED_SERIAL=115200</Elem>
+              <Elem>ICACHE_FLASH</Elem>
+              <Elem>WIFI_PWD="b7zjz3BF"</Elem>
+              <Elem>WIFI_SSID="angelo-U36SG"</Elem>
+              <Elem>__ets__</Elem>
+            </preprocessorList>
+          </cTool>
         </makeTool>
         <preBuild>
           <preBuildCommandWorkingDir>.</preBuildCommandWorkingDir>
           <preBuildCommand></preBuildCommand>
         </preBuild>
       </makefileType>
-      <item path="app/application.cpp" ex="false" tool="1" flavor2="0">
+      <item path="app/application.cpp" ex="false" tool="1" flavor2="4">
       </item>
-      <item path="app/configuration.cpp" ex="false" tool="1" flavor2="0">
+      <item path="app/configuration.cpp" ex="false" tool="1" flavor2="4">
       </item>
-      <item path="app/webserver.cpp" ex="false" tool="1" flavor2="0">
+      <item path="app/webserver.cpp" ex="false" tool="1" flavor2="4">
       </item>
     </conf>
   </confs>

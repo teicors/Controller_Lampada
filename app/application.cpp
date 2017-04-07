@@ -12,34 +12,80 @@
 #include <libraries/CronLibrary/TimedCommand.h>
 #include <libraries/CronLibrary/Cron.h>
 #include "NtpClientDelegateDemo.h"
-#include "../include/configuration.h"
+#include <libraries/Adafruit_ST7735_AS/Adafruit_ST7735_AS.h>
+//#include "../include/FreeSansBold9pt7b.h"
+//#include "../include/DSEG7ClassicRegular18pt7b.h"
+#include <sming/core/SystemClock.h>
 
 #define TYPEOFBOARD 00
 
-uint8_t pins[1] = {15}; // List of pins that you want to connect to pwm
-HardwarePWM HW_pwm(pins, 1);
-void onNtpReceive(NtpClient& client, time_t timestamp);
+    int8_t Old_Hour;
+    int8_t Old_Minute;
+    int8_t Old_Second;
+    int16_t Old_Milliseconds;
+    int8_t Old_Day;
+    int8_t Old_DayofWeek; // Sunday is day 0
+    int8_t Old_Month; // Jan is month 0
+    int16_t Old_Year;  // Full Year numer
+
+
+
+/*
+ * Hardware SPI mode:
+ * GND      (GND)         GND
+ * VCC      (VCC)         3.3v
+ * D0       (CLK)         GPIO14   D5
+ * D1       (MOSI)        GPIO13   D7
+ * RES      (RESET)       GPIO16   D0
+ * DC       (DC)          GPIO0    D3
+ * CS       (CS)          GPIO2    D4
+ */
+    
+#define TFT_SCLK 	14 /* D5 */
+#define TFT_MOSI 	13 /* D7 */
+#define TFT_RST  	16 /* D0 */
+#define	TFT_DC   	15 /* D8 */ // 15 8  
+#define TFT_CS   	4  /* D2 */ //  4 2
+
+#define PIN_BUTTON      5  /* D1 */ //  5 1
+#define PIN_PWM         2  /* D4 */ //  2 4
+#define PIN_BUZZER      0  /* D3 */ //  0 3
+
+#if LCD == 0
+// Do not need the board's setup 
+#else
+//Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_MOSI, TFT_SCLK, TFT_RST);
+Adafruit_ST7735_AS tft = Adafruit_ST7735_AS(TFT_CS, TFT_DC, TFT_RST);
+#endif
+
 
 #define MAX_READ 101
 
 #define JSON_HOST "192.168.1.120"
 #define JSON_PORT 5008
 
-Timer Timer0;
-Timer flashled;
+Timer ButtonTimer;
+Timer TimerLed;
 Timer CronTimer;
+DateTime ShowMyTime;
 
 int inter0;
 int verso;
 int32_t read0, last0;
 String StrTime;
+uint32_t startTime;
 
 LampConfig LampCfg;
 LampMessage LampMsg;
 
+uint8_t pins[1] = {PIN_PWM}; // List of pins that you want to connect to pwm
+HardwarePWM HW_pwm(pins, 1);
+void onNtpReceive(NtpClient& client, time_t timestamp);
 
+#if LCD == 3
 FTPServer ftp;
-     
+#endif
+
 //
 // TimedCommand 1 : PowerOff
 // TimedCommand 2 : Alarm
@@ -47,29 +93,9 @@ FTPServer ftp;
 //
 
 
-TimedCommand command1("0","00.*.*.*.*.*","POWER_OFF","0");
-TimedCommand command2("0","00.*.*.*.*.*","ON","12");
-TimedCommand command3("0","00.*.*.*.*.*","ON","13");
-
-/*
-TimedCommand command4("0","15.*.*.*.*.*","OFF","12");
-
-TimedCommand command5("0","20.*.*.*.*.*","ON","13");
-TimedCommand command6("0","25.*.*.*.*.*","OFF","13");
-
-TimedCommand command7("0","30.*.*.*.*.*","ON","12");
-TimedCommand command8("0","35.*.*.*.*.*","OFF","12");
-
-TimedCommand command9("0","40.*.*.*.*.*","ON","13");
-TimedCommand command10("0","45.*.*.*.*.*","OFF","13");
-
-TimedCommand command11("0","50.*.*.*.*.*","ON","12");
-TimedCommand command12("0","55.*.*.*.*.*","OFF","12");
-
-TimedCommand command13("0","0.*.*.*.*.*","ALARM_ON","15");
-TimedCommand command14("0","30.*.*.*.*.*","ALARM_ON","15");
-*/
-
+TimedCommand command1("0","00.*.*.*.*.*","POWER_OFF","PIN_PWM");
+TimedCommand command2("0","00.*.*.*.*.*","ALARM_ON","0");
+TimedCommand command3("0","00.*.*.*.*.*","ON","5");
 
 
 // create an array of timed commands
@@ -77,24 +103,6 @@ TimedCommand *tCommands[] = {
     &command1,
     &command2,
     &command3
-/*
-    &command4,
-
-    &command5,
-    &command6,
-
-    &command7,
-    &command8,
-
-    &command9,
-    &command10,
-
-    &command11,
-    &command12,
-
-    &command13,
-    &command14
-*/
 };
         
 // create a cron object and pass it the array of timed commands
@@ -106,28 +114,6 @@ void onMessageReceived(String topic, String message);
 //void publishMessage(int evento, int linea, int tempo);
 void sendData();
 void setpwn(int led0);
-
-// Publish our message
-//void publishMessage(String string0, int led, int numero)
-//void publishMessage(int evento, int linea, int tempo)
-//void publishMessage()
-//{
-//    String string0 = WifiStation.getIP().toString().c_str();
-//    String String0 = LampMsg.evento;
-//    String String1 = LampMsg.stato;
-
-//    String2="{ \"sensorid\":"+String1+"";
-//    String2=String2+" , \"basetta\":\""+string0+"\"";
-
-//    if (LampMsg.evento !=-1)
-//    {
-//        String2=String2+" , \"count\":"+String0;
-//    }
-//    String2=String2+" }";
-
-//    Serial.println(String2);    
-//    sendData();
-//}
 
 void JsonOnComplete(TcpClient& client, bool successful)
 {
@@ -154,7 +140,6 @@ void JsonOnReadyToSend(TcpClient& client, TcpConnectionEvent sourceEvent)
         MsgToSend["evento"]  = LampMsg.evento;
         MsgToSend["stato"]   = LampMsg.stato;
         MsgToSend["valore"]  = LampMsg.valore;
-//        MsgToSend["tempo"]  = LampMsg.tempo;
 
 
         client.sendString("POST /json HTTP/1.1\r\n");
@@ -162,14 +147,10 @@ void JsonOnReadyToSend(TcpClient& client, TcpConnectionEvent sourceEvent)
         client.sendString("Content-Type: application/json;charset=utf-8\r\n");
         client.sendString("Content-Length: "+String(MsgToSend.measureLength()+1)+"\r\n");
         client.sendString("\r\n");
-        //MsgToSend.prettyPrintTo(client,MsgToSend.measureLength());
-        //json.printTo(client); // very slow ??client.sendString("\r\n");
-//        client.sendString(MsgToSend);
         char buf[MsgToSend.measureLength()];
         MsgToSend.printTo(buf, sizeof(buf)+1);
         client.sendString(buf);
         MsgToSend.printTo(Serial);
-//        client.println(out);
         client.sendString("\r\n");
     }
 }
@@ -204,22 +185,35 @@ void onMessageReceived(String topic, String message)
     Serial.println(message);
 }
 
+void flashaled()
+{
+        setpwn(100);
+        delay(50);
+        setpwn(0);
+        delay(50);
+        setpwn(100);
+        delay(50);    
+        setpwn(0);
+        delay(50);
+        setpwn(100);
+        delay(50);    
+        setpwn(0);
+        delay(50);
+}
+
 
 void check_button0() {
   read0 = micros();
-  if (cron.setAlarm==false and digitalRead(INT_PIN0)==0 ) {
+  if (cron.setAlarm==false and digitalRead(PIN_BUTTON)==1 ) {
         if (inter0==true) {   
- //           debugf("Pressed : direction %d, Led %d, timestamp %d \n",verso,cfg.lamp);
             if (last0 < read0-40000) 
             {
-
                 last0=read0;
                 LampCfg.lamp=LampCfg.lamp+2*verso;
                 if (LampCfg.lamp<0) {LampCfg.lamp=0;}
-                if (LampCfg.lamp>=MAX_READ-1) {LampCfg.lamp=MAX_READ-1; }
-//                if (volte0>=MAX_READ-1) {volte0=MAX_READ-1;}
-//                debugf("Pressed : direction %d, Led %d\n",verso,cfg.lamp);
+                if (LampCfg.lamp>MAX_READ-1) {LampCfg.lamp=MAX_READ-1; }
                 setpwn(LampCfg.lamp);
+                Serial.printf("Lamp %d\n",LampCfg.lamp);
             }
         }
    
@@ -231,12 +225,9 @@ void IRAM_ATTR interruptHandler01();
 void IRAM_ATTR interruptHandler00()
 {
     inter0=true;
-//    debugf("Key pressed Value %d",cfg.lamp);
-//    debugf("Pressed : interrupt1 %d interrupt2 %d delta %d\n",interrupt1,interrupt2, interrupt1-interrupt2);
-//    interrupt2=interrupt1;
-//    interrupt1=micros();
-    detachInterrupt(INT_PIN0);
-    attachInterrupt(INT_PIN0, interruptHandler01, RISING);
+    Serial.print("Press button\n");
+    detachInterrupt(PIN_BUTTON);
+    attachInterrupt(PIN_BUTTON, interruptHandler01, FALLING);
 }
 
 void IRAM_ATTR interruptHandler01()
@@ -245,11 +236,11 @@ void IRAM_ATTR interruptHandler01()
     cron.setAlarm=false;
     cron.setPower=false;
     cron.setBuzzer=false;
-//    debugf("Key released Value %d",cfg.lamp);
+    cron.AlarmSeconds=1;
     verso=verso*-1;
-//    debugf("Key released : direction %d, Led %d\n",verso,cfg.lamp);
-    detachInterrupt(INT_PIN0);
-    attachInterrupt(INT_PIN0, interruptHandler00, FALLING);
+    Serial.print("Release button\n");
+    detachInterrupt(PIN_BUTTON);
+    attachInterrupt(PIN_BUTTON, interruptHandler00, RISING);
 }        
 
 
@@ -307,10 +298,10 @@ void startWebClock()
 
 void setpwn(int led0)
 {
-    HW_pwm.analogWrite(INT_PIN15, led0*10);
+    HW_pwm.analogWrite(PIN_PWM, led0*10);
 }
 
-
+#if LCD==3
 void startFTP()
 {
         if (!fileExist("index.html"))
@@ -320,22 +311,69 @@ void startFTP()
         ftp.listen(21);
         ftp.addUser("me", "123"); // FTP account
 }
+#endif
+
+void draw_clock(void) {
+    int8_t Hour;
+    int8_t Minute;
+    int8_t Second;
+    int16_t Milliseconds;
+    int8_t Day;
+    int8_t DayofWeek; // Sunday is day 0
+    int8_t Month; // Jan is month 0
+    int16_t Year;  // Full Year numer
 
 
-void flashaled()
-{
-        setpwn(100);
-        delay(50);
-        setpwn(0);
-        delay(50);
-        setpwn(100);
-        delay(50);    
-        setpwn(0);
-        delay(50);
-        setpwn(100);
-        delay(50);    
-        setpwn(0);
-        delay(50);
+    ShowMyTime.convertFromUnixTime(SystemClock.now(),&Second,&Minute,&Hour,&Day,&DayofWeek,&Month,&Year);
+#if LCD == 0
+    DisplayTime(Hour, Minute, Second);
+#else    
+//    tft.fillScreen(ST7735_BLACK);
+//    tft.setFont(&DSEG7ClassicRegular18pt7b);
+    tft.setTextSize(4);
+    tft.setTextColor(ST7735_BLACK);
+    tft.setCursor(0, 30);
+    tft.print(Old_Hour);
+    tft.print(":");
+    tft.print(Old_Minute);
+    
+    tft.setTextColor(ST7735_WHITE);
+    tft.setCursor(0, 30);
+    tft.print(Hour);
+    tft.print(":");
+    tft.print(Minute);
+    tft.setTextSize(1);
+//    tft.print(":");
+//    tft.print(Second);
+//    tft.setFont(&FreeSansBold9pt7b);
+    tft.setCursor(0,50);
+    tft.setTextSize(2);
+    tft.setCursor(0,70);
+    tft.setTextColor(ST7735_BLACK);
+    tft.print("Lunedi");
+    tft.print(Old_DayofWeek);
+    tft.setCursor(0,70);
+    tft.setTextColor(ST7735_RED);
+    tft.print("Lunedi");
+    tft.print(DayofWeek);
+
+    tft.setCursor(0,90);
+    tft.setTextColor(ST7735_BLACK);
+    tft.print(Old_Day);
+    tft.print(Old_Month);
+    tft.print(Old_Year);
+    tft.setCursor(0,90);
+    tft.setTextColor(ST7735_GREEN);
+    tft.print(Day);
+    tft.print(Month);
+    tft.print(Year);
+#endif    
+    Old_Hour=Hour;
+    Old_Minute=Minute;
+    Old_DayofWeek=DayofWeek;
+    Old_Day=Day;
+    Old_Month=Month;
+    Old_Year=Year;
 }
 
 void CronLoop()
@@ -343,21 +381,32 @@ void CronLoop()
 //    debugf("CronLoop");
     cron.loop();
     if (cron.setAlarm==true) {
-        flashled.initializeMs(500, flashaled).start();
+        Serial.print("Buongiorno \n");
+        TimerLed.initializeMs(500, flashaled).start();
+        cron.setAlarm=false;
     }
-    else {
-        flashled.initializeMs(500, flashaled).stop();
-        setpwn(LampCfg.lamp);
-    }
+//    else {
+//        TimerLed.initializeMs(500, flashaled).stop();
+//        setpwn(LampCfg.lamp);
+//    }
     if (cron.setBuzzer==true) {
-        flashled.initializeMs(500, flashaled).start();
+        TimerLed.initializeMs(500, flashaled).start();
     }
     if (cron.setPower==true) {
-        LampCfg.lamp=0;
+        Serial.print("Buonanotte \n");
+//        LampCfg.lamp=0;
         verso=1;
-        setpwn(LampCfg.lamp);
+//        setpwn(LampCfg.lamp);
+        setpwn(0);
         cron.setPower=false;
     }
+    if (cron.AlarmSeconds>0)
+    {
+        cron.AlarmSeconds--;
+        if (cron.AlarmSeconds=0) {TimerLed.initializeMs(500, flashaled).stop();}
+    }
+//    if (cron.AlarmSeconds=0) {TimerLed.initializeMs(500, flashaled).stop();}
+    draw_clock();
 }
 
 void SendPresence()
@@ -376,9 +425,9 @@ ntpClientDemo *demo;
 // ntpClientDemo dm1;
 
 void onPrintSystemTime() {
-    Serial.print("Local Time    : ");
+    Serial.print("Local Time : ");
     Serial.println(SystemClock.getSystemTimeString());
-    Serial.print("UTC Time: ");
+    Serial.print("UTC Time   : ");
     Serial.println(SystemClock.getSystemTimeString(eTZ_UTC));
 }
 
@@ -398,7 +447,7 @@ void connectOk()
 {
     debugf("I'm CONNECTED");
     Serial.println(WifiStation.getIP().toString());
-    Timer0.initializeMs(50, check_button0).start();
+ //   Timer0.initializeMs(50, check_button0).start();
 
     debugf("connected");
 
@@ -407,9 +456,11 @@ void connectOk()
         downloadContentFiles();
     else
         startWebServer();
+#if LCD == 3
     startFTP();
-    flashled.initializeMs(500, flashaled).stop();
-    CronTimer.initializeMs(1000, CronLoop).start();
+#endif
+    //flashled.initializeMs(500, flashaled).stop();
+    //CronTimer.initializeMs(1000, CronLoop).start();
     SendPresence();
     demo = new ntpClientDemo();
 }
@@ -423,9 +474,6 @@ void connectFail()
 
 void init()
 {
-//    HW_pwm.restart();
-
-    flashled.initializeMs(500, flashaled).start();
     spiffs_mount(); // Mount file system, in order to work with files
     Serial.begin(SERIAL_BAUD_RATE); // 115200 or 9600 by default
     delay(3000);
@@ -433,14 +481,27 @@ void init()
     cron.setAlarm=false;
     cron.setPower=false;
     cron.setBuzzer=false;
+    cron.AlarmSeconds=0;
     cron.PrintJobs();
     verso=1;
-    loadConfig();
+
+#if LCD == 0
+    LcdInitialise();
+    LcdClear();
+#else
+    tft.initR(INITR_144GREENTAB);   // initialize a ST7735S chip, black tab
+    tft.fillScreen(ST7735_BLACK);
+    draw_clock();
+#endif
     // set timezone hourly difference to UTC
     SystemClock.setTimeZone(1);   
-//    Serial.println(cron(tCommands[1]));
-    // Station - WiFi client
-    attachInterrupt(INT_PIN0, interruptHandler00, FALLING);
+    loadConfig();
+//    pinMode(1,OUTPUT);
+    pinMode(PIN_BUTTON, INPUT);
+    attachInterrupt(PIN_BUTTON, interruptHandler00, RISING);
+    CronTimer.initializeMs(1000, CronLoop).start();
+    ButtonTimer.initializeMs(50, check_button0).start(); 
+        
     WifiStation.enable(true);
     WifiStation.config(WIFI_SSID, WIFI_PWD); // Put you SSID and Password here
     WifiStation.waitConnection(connectOk, 30, connectFail); // We recommend 20+ seconds at start

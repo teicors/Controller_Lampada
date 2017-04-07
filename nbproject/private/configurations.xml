@@ -5,9 +5,12 @@
       <df name="app">
         <in>application.cpp</in>
         <in>configuration.cpp</in>
+        <in>orologio.cpp</in>
         <in>webserver.cpp</in>
       </df>
       <df name="include">
+        <in>DSEG7ClassicRegular18pt7b.h</in>
+        <in>FreeSansBold9pt7b.h</in>
         <in>NtpClientDelegateDemo.h</in>
         <in>configuration.h</in>
         <in>special_chars.h</in>

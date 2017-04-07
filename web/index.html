@@ -6,25 +6,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
         <!-- Bootstrap core -->
-    <link rel="stylesheet" href="http://server/templates/jquery-ui.css">
-    <link rel="stylesheet" href="http://server/templates/bootstrap.css"> 
-    <link rel="stylesheet" href="http://server/templates/jquery-ui.min.css">
-    <link rel="stylesheet" href="http://server/templates/jquery.ui.timepicker.css">  
+    <link rel="stylesheet" href="http://10.42.0.1/templates/jquery-ui.css">
+    <link rel="stylesheet" href="http://10.42.0.1/templates/bootstrap.css"> 
+    <link rel="stylesheet" href="http://10.42.0.1/templates/jquery-ui.min.css">
+    <link rel="stylesheet" href="http://10.42.0.1/templates/jquery.ui.timepicker.css">  
 
     
 <!--    <script type="text/javascript" src="https://fgelinas.com/code/timepicker/include/jquery-1.9.0.min.js"></script>  -->
-    <script src="http://server/templates/jquery.js"></script>
-    <script src="http://server/templates/jquery-ui.js"></script>
+    <script src="http://10.42.0.1/templates/jquery.js"></script>
+    <script src="http://10.42.0.1/templates/jquery-ui.js"></script>
 <!--
     <script type="text/javascript" src="https://fgelinas.com/code/timepicker/include/ui-1.10.0/jquery.ui.core.min.js"></script>
     <script type="text/javascript" src="https://fgelinas.com/code/timepicker/include/ui-1.10.0/jquery.ui.widget.min.js"></script>
     <script type="text/javascript" src="https://fgelinas.com/code/timepicker/include/ui-1.10.0/jquery.ui.tabs.min.js"></script>
     <script type="text/javascript" src="https://fgelinas.com/code/timepicker/include/ui-1.10.0/jquery.ui.position.min.js"></script>
 -->
-    <script src="http://server/templates/jquery.ui.touch-punch.min.js"></script>
+    <script src="http://10.42.0.1/templates/jquery.ui.touch-punch.min.js"></script>
 <!--    <script src="server/templates/moment.js"></script> -->
     
-    <script src="http://server/templates/jquery.ui.timepicker.js"></script>
+    <script src="http://10.42.0.1/templates/jquery.ui.timepicker.js"></script>
     
 
     <title>Light Control WiFi module</title>
@@ -66,6 +66,24 @@
                 color: white;
             }
 
+            .button1Set {
+                background-color: #4CAF50;
+                color: red;
+            }
+            
+            .button1Reset {
+                background-color: #4CAF50;
+                color: white;
+            }
+            
+            .buttonpower:focus {
+                border: 2px solid red;
+            }
+
+            .buttonpower:active {
+                border: 5px solid red;
+            }
+
             .button2 {
                 background-color: white; 
                 color: black; 
@@ -100,7 +118,7 @@
           checkbuzzer();
         });
 
-        $( function() { 
+        $(function() { 
           var handle = $( "#custom-handle" );
           $( "#slider" ).slider({
             value: {lamp}, 
@@ -123,19 +141,31 @@
 
         function checkpower(){
             if ($('#poweroff').is(":checked")) {
-               $(".panel-body-power-low").show();
-               $.post( "/api/off", { time: powertime.value, state: "1" } );;
+                $("#poweroff").prop('checked', false);
+                $("#poweroff").hide();
+                $('#bottonepw').css('.button1Set');
+                $(".panel-body-power-low").show();
+                $.post( "/api/off", { time: powertime.value, state: "1" } );;
            } else {
-               $(".panel-body-power-low").hide();
-               $.post( "/api/off", { time: powertime.value, state: "0" } );
+                $('#bottonepw').css('.button1Reset');
+                $("#poweroff").prop('checked', true);
+                $("#poweroff").hide();
+                $(".panel-body-power-low").hide();
+                $.post( "/api/off", { time: powertime.value, state: "0" } );
            }
         }
 
         function checkalarm(){
             if ($('#alarm').is(":checked")) {
+                $("#alarm").prop('checked', false);
+                $("#alarm").hide();
+                $('#bottoneal').css('.button1Set');
                $(".panel-body-alarm-low").show();
                $.post( "/api/alarm", { time: alarmtime.value, state: "1" } );
            } else {
+                $('#bottoneal').css('.button1Reset');
+                $("#alarm").prop('checked', true);
+                $("#alarm").hide();
                $(".panel-body-alarm-low").hide();
                $.post( "/api/alarm", { time: alarmtime.value, state: "0" } );
            }
@@ -193,16 +223,17 @@
 
                     <div class="col-xs-10 col-md-5"> 
                         <div class="panel panel-default"> 
-                            <div class="panel-heading">
-                                <button class="button button1">Green</button>
-<!--                                <h3 class="panel-title">Power Off</h3> -->
+                            <div class="panel-heading-power">
+<!--                                <button class="button button1">Green</button> -->
+                                <button id="bottonepw"  style="width:100%;heigth:100%;" onclick="checkpower();" class="button button1">Power off</button>
+                                <!--                                <h3 class="panel-title">Power Off</h3> -->
                             </div>
                             <div class="panel-body">
                                 <table>
                                 <tr>
                                 <th>
                                 <form action="">
-                                    <input id="poweroff" onclick="checkpower();" type="checkbox" unchecked/> Enabled
+                                    <input id="poweroff" onclick="checkpower();" type="checkbox" unchecked/>
                                     <br />
                                 </form>
                                 </th>
@@ -219,15 +250,23 @@
 
                     <div class="col-xs-10 col-md-5"> 
                         <div class="panel panel-default"> 
+<!--
                             <div class="panel-heading">
                               <h3 class="panel-title">Alarm</h3>
                             </div>
+-->
+                            <div class="panel-heading-alarm">
+<!--                                <button class="button button1">Green</button> -->
+                                <button id="bottoneal"  style="width:100%;heigth:100%;" onclick="checkalarm();" class="button button1">Alarm</button>
+                                <!--                                <h3 class="panel-title">Power Off</h3> -->
+                            </div>
+                            
                             <div class="panel-body">
                                 <table>
                                 <tr>
                                 <th>
                                 <form action="">
-                                    <input id="alarm" onclick="checkalarm();" type="checkbox" unchecked/> Enabled
+                                    <input id="alarm" onclick="checkalarm();" type="checkbox" unchecked/>
                                     <br />
                                 </form>
                                 </th>

@@ -31,7 +31,7 @@ void loadConfig()
     }
     else
     {
-        debugf("Il file non esiste");
+        debugf("Il file di configurazione non esiste");
         LampCfg.NetworkSSID = WIFI_SSID;
         LampCfg.NetworkPassword = WIFI_PWD;
     }

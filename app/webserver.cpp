@@ -14,6 +14,8 @@ extern LampConfig LampCfg;
 extern LampMessage LampMsg;
 extern void sendData();
 extern Cron cron;
+void downloadContentFiles();
+
 
 // If you want, you can define WiFi settings globally in Eclipse Environment Variables
 #ifndef WIFI_SSID
@@ -167,6 +169,34 @@ void onReboot(HttpRequest &request, HttpResponse &response)
     System.restart();
 }
 
+void onUpdate(HttpRequest &request, HttpResponse &response)
+{
+    downloadContentFiles();
+}
+
+void DrawLightBar(uint8_t seconds)
+{
+  // Position the pointer
+  LcdWrite(LCD_C, 0x80 | 0x0b);
+  LcdWrite(LCD_C, 0x44);
+
+  // Draw the left side of the progress bar box
+  LcdWrite(LCD_D, 0xF0);
+  uint8_t i;
+  for(i = 0; i < 59; i++)
+  {
+    if(i < seconds)
+    {
+      LcdWrite(LCD_D, 0xF0);
+    }
+    else
+    {
+      LcdWrite(LCD_D, 0x90);
+    }
+  }
+}
+  
+
 void onApiSet(HttpRequest &request, HttpResponse &response)
 {
     LampCfg.lamp = request.getPostParameter("value","-1").toInt();
@@ -195,6 +225,7 @@ void startWebServer()
 
     server.listen(80);
     server.addPath("/", onIndex);
+    server.addPath("/update", onUpdate);
     server.addPath("/api", onApiDoc);
     server.addPath("/api/status", onApiStatus);
     server.addPath("/api/set", onApiSet);
@@ -233,9 +264,9 @@ void downloadContentFiles()
     downloadClient.reset(); // Reset current download status
 
     if (dowfid == 0)
-            downloadClient.downloadFile("http://server/templates/LightControl/LightControl.html", "index.html");
+            downloadClient.downloadFile("http://192.168.1.1/templates/LightControl/LightControl.html", "index.html");
     else if (dowfid == 1)
-            downloadClient.downloadFile("http://server/templates/LightControl/LightConfig.html", "config.html");
+            downloadClient.downloadFile("http://192.168.1.1/templates/LightControl/LightConfig.html", "config.html");
     else
     {
             // Content download was completed
