@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -6,21 +5,154 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>MeteoLight Control WiFi muodule</title>
+    <title>Light Control WiFi module</title>
 
     <!-- Bootstrap core -->
-	<script src="http://192.168.1.120/templates/jquery.js"></script>
-        <script src="http://192.168.1.120/templates/jquery-ui.js"></script>
-        <script src="http://192.168.1.120/templates/jquery-cron.js"></script>
-        <script src="http://192.168.1.120/templates/jqCron.js"></script>
-        <script src="http://192.168.1.120/templates/jqCron.en.js"></script>
-        
-        <link href="http://192.168.1.120/templates/bootstrap.css" rel="stylesheet">
-        <link href="http://192.168.1.120/templates/jqCron.css" rel="stylesheet" />
-        
+    <link href="http://fileserver/templates/bootstrap.css" rel="stylesheet">
+	<script src="http://fileserver/templates/jquery.js"></script>
+        <script src="http://fileserver/templates/jquery-ui.js"></script>
+       <script src="http://fileserver/templates/jquery.ui.touch-punch.min.js"></script>
+        <link rel="stylesheet" href="http://fileserver/templates/jquery-ui.css">
+
 	<style>
 		.main { font-size: 63px; }
+            #custom-handle {
+              width: 3em;
+              height: 1.6em;
+              top: 50%;
+              margin-top: -.8em;
+              text-align: center;
+              line-height: 1.6em;
+            }
+            .button {
+                background-color: #4CAF50; /* Green */
+                border: none;
+                color: white;
+                padding: 16px 32px;
+                text-align: center;
+                text-decoration: none;
+                display: inline-block;
+                font-size: 16px;
+                margin: 4px 2px;
+                -webkit-transition-duration: 0.4s; /* Safari */
+                transition-duration: 0.4s;
+                cursor: pointer;
+            }
+
+            .button1 {
+                background-color: white; 
+                color: black; 
+                border: 2px solid #4CAF50;
+            }
+
+            .button1:hover {
+                background-color: #4CAF50;
+                color: white;
+            }
+
+            .button1Set {
+                background-color: #4CAF50;
+                color: red;
+            }
+            
+            .button1Reset {
+                background-color: #4CAF50;
+                color: white;
+            }
+            
+            .buttonpower:focus {
+                border: 2px solid red;
+            }
+
+            .buttonpower:active {
+                border: 5px solid red;
+            }
+
+            .button2 {
+                background-color: white; 
+                color: black; 
+                border: 2px solid #008CBA;
+            }
+
+            .button2:hover {
+                background-color: #008CBA;
+                color: white;
+            }
+
+
+                
 	</style>
+        <script>
+        $(document).ready(function() {
+        });
+
+        function updatetime(){
+            var unix = Math.round(+new Date()/1000);
+            $.post( "/api/SetTime", { time: unix } );
+        }
+        
+
+        $(function() { 
+          var handle = $( "#custom-handle-ti" );
+          $( "#slider-ti" ).slider({
+            value: {sleeptime}, 
+            min: 0,
+            max: 1439,
+            create: function() {
+              ore=parseInt($( this ).slider( "value" )/60);
+              minuti=$( this ).slider( "value" )-ore*60;
+              $( "#bbb" ).val( ('0'+ore).slice(-2)+":"+('0'+minuti).slice(-2) );              
+              handle.text( "" );
+            },
+            slide: function( event, ui ) {
+              ore=parseInt($( this ).slider( "value" )/60);
+              minuti=($( this ).slider( "value" )-ore*60);
+              $( "#bbb" ).val( ('0'+ore).slice(-2)+":"+('0'+minuti).slice(-2) );              
+              handle.text( "" );
+            },
+            stop: function( event, ui ) {
+              ore=parseInt($( this ).slider( "value" )/60);
+              minuti=($( this ).slider( "value" )-ore*60);
+              $( "#bbb" ).val( ('0'+ore).slice(-2)+":"+('0'+minuti).slice(-2) );              
+              $.post( "/api/off", { time: ('0'+ore).slice(-2)+":"+('0'+minuti).slice(-2), state: "1" } );        
+              handle.text( "" );
+            }
+          });
+          
+        } );
+
+        
+        $(function() { 
+          var handle = $( "#custom-handle-al" );
+          $( "#slider-al" ).slider({
+            value: {alarmtime}, 
+            min: 0,
+            max: 1439,
+            create: function() {
+              ore=parseInt($( this ).slider( "value" )/60);
+              minuti=$( this ).slider( "value" )-ore*60;
+              $( "#ccc" ).val( ('0'+ore).slice(-2)+":"+('0'+minuti).slice(-2) );              
+              handle.text( "" );
+            },
+            slide: function( event, ui ) {
+              ore=parseInt($( this ).slider( "value" )/60);
+              minuti=($( this ).slider( "value" )-ore*60);
+              $( "#ccc" ).val( ('0'+ore).slice(-2)+":"+('0'+minuti).slice(-2) );              
+              handle.text( "" );
+            },
+            stop: function( event, ui ) {
+              ore=parseInt($( this ).slider( "value" )/60);
+              minuti=($( this ).slider( "value" )-ore*60);
+              $( "#ccc" ).val( ('0'+ore).slice(-2)+":"+('0'+minuti).slice(-2) );              
+              $.post( "/api/alarm", { time: ('0'+ore).slice(-2)+":"+('0'+minuti).slice(-2), state: "1" } );        
+              handle.text( "" );
+            }
+          });
+        } );
+
+        
+        </script>
+        
 	
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
@@ -30,117 +162,14 @@
   </head>
 
   <body>
-    <script type="text/javascript">
-    $(document).ready(function() {
-	$('.selector11').jqCron();
-	$('.selector12').jqCron();
-	$('.selector21').jqCron();
-	$('.selector22').jqCron();
-	$('.selector31').jqCron();
-	$('.selector32').jqCron();
-	$('.selector41').jqCron();
-	$('.selector42').jqCron();
-	$('.selector51').jqCron();
-	$('.selector52').jqCron();
-	$('.selector61').jqCron();
-	$('.selector62').jqCron();
-        check6();
-        check5();
-        check4();
-        check3();
-        check2();
-        check1();
-    });
-    
-function check1(){
-    if ($('#enabled1').is(':checked')) {
-       $('.panel-body-2').show();
-       $('.panel-body-1-low').show();
-       $('.selector11').show();
-       $('.selector12').show();
-   } else {
-       $('.panel-body-2').hide();
-       $('.panel-body-1-low').hide();
-       $('.selector11').hide();
-       $('.selector12').hide();
-   }
-}
-
-function check2(){
-    if ($('#enabled2').is(':checked')) {
-       $('.panel-body-3').show();
-       $('.panel-body-2-low').show();
-       $('.selector21').show();
-       $('.selector22').show();
-   } else {
-       $('.panel-body-3').hide();
-       $('.panel-body-2-low').hide();
-       $('.selector21').hide();
-       $('.selector22').hide();
-   }
-}
-
-function check3(){
-    if ($('#enabled3').is(":checked")) {
-       $(".panel-body-4").show();
-       $(".panel-body-3-low").show();
-       $('.selector31').show();
-       $('.selector32').show();
-   } else {
-       $(".panel-body-4").hide();
-       $(".panel-body-3-low").hide();
-       $('.selector31').hide();
-       $('.selector32').hide();
-   }
-}
-
-function check4(){
-    if ($('#enabled4').is(":checked")) {
-       $(".panel-body-5").show();
-       $(".panel-body-4-low").show();
-       $('.selector41').show();
-       $('.selector42').show();
-   } else {
-       $(".panel-body-5").hide();
-       $(".panel-body-4-low").hide();
-       $('.selector41').hide();
-       $('.selector42').hide();
-   }
-}
-
-function check5(){
-    if ($('#enabled5').is(":checked")) {
-       $(".panel-body-6").show();
-       $(".panel-body-5-low").show();
-       $('.selector51').show();
-       $('.selector52').show();
-   } else {
-       $(".panel-body-6").hide();
-       $(".panel-body-5-low").hide();
-       $('.selector51').hide();
-       $('.selector52').hide();
-   }
-}
-
-function check6(){
-    if ($('#enabled6').is(":checked")) {
-       $(".panel-body-6-low").show();
-       $('.selector61').show();
-       $('.selector62').show();
-   } else {
-       $(".panel-body-6-low").hide();
-       $('.selector61').hide();
-       $('.selector62').hide();
-   }
-}
-    </script>
 
     <div class="container">
       <div class="header">
         <nav>
           <ul class="nav nav-pills pull-right">
             <li role="presentation"><a href="/">Home</a></li>
-            <li role="presentation" class="active"><a href="/config">Configuration</a></li>
+            <li role="presentation" class="active">
+                <a href="/config">Configuration</a></li>
           </ul>
         </nav>
         <h3 class="text-muted">Light Control WiFi module</h3>
@@ -149,144 +178,95 @@ function check6(){
 	  <div class="row">
 		<h2>&nbsp;</h2>
 		<div class="col-xs-offset-2 col-xs-8">
-			<!-- Network config -->
+			<!-- Misc settings config -->
+                        
+                            <div class="panel-heading">
+                              <table style="width:300px">
+                              <tr>
+                                  <th>
+                                <h3 class="panel-title">Time Power Off</h3>
+                                  </th>
+                                  <th>
+                                <input type="text" id="bbb" readonly style="border:0; color:#f6931f; font-weight:bold;">
+                                  </th>
+                              </tr>
+                              </table>
+                            </div>
+
+                            <div class="panel-body">
+                                <div id="slider-ti">
+                                  <div id="custom-handle-ti" class="ui-slider-handle"></div> 
+                                </div>
+                            </div>
+                        
+
+                            <div class="panel-heading">
+                              <table style="width:280px">
+                              <tr>
+                                  <th>
+                                  <h3 class="panel-title">Time Alarm</h3>
+                                  </th>
+                                  <th>
+                                  <input type="text" id="ccc" readonly style="border:0; color:#f6931f; font-weight:bold;">
+                                  </th>
+                              </tr>
+                              </table>
+                            </div>
+
+                            <div class="panel-body">
+                                <div id="slider-al">
+                                  <div id="custom-handle-al" class="ui-slider-handle"></div> 
+                                </div>
+                            </div>
+                        
+                        
+			<div>
+			  <div class="panel panel-default">
+				<div class="panel-heading">
+				  <h3 class="panel-title">Misc settings</h3>
+				</div>
+				<div class="panel-body">
+                                      
+                                    <div class="panel panel-default"> 
+                                        <div class="panel-heading-power">
+            <!--                                <button class="button button1">Green</button> -->
+                                            <button id="bottoneut"  style="width:100%;heigth:100%;" onclick="updatetime();" class="button button1">Update Time</button>
+                                            <!--                                <h3 class="panel-title">Power Off</h3> -->
+                                        </div>
+                                    </div>
+                                      
+				</div>
+			  </div>
+			</div>
+
+                        <!-- Network config -->
 			<div>
 			  <div class="panel panel-default">
 				<div class="panel-heading">
 				  <h3 class="panel-title">Network</h3>
 				</div>
 				<div class="panel-body">
-                                    <div class="form-group">
-                                          <label>Name</label>
-                                          <input type="text" name="SSID" class="form-control" placeholder="Enter SSID" value="{SSID}">
-                                    </div>
-                                    <div class="form-group">
-                                          <label for="exampleInputPassword1">Password</label>
-                                          <input type="password" name="Password" class="form-control" placeholder="Password">
-                                    </div>
-                                    <button type="submit" class="btn btn-success">Save network</button>
-                                    <button type="cancel" class="btn btn-link">Cancel</button>
+				  <form method="POST">
+					  <div class="form-group">
+						<label>Name</label>
+						<input type="text" name="SSID" class="form-control" placeholder="Enter SSID" value="{SSID}">
+					  </div>
+					  <div class="form-group">
+						<label for="exampleInputPassword1">Password</label>
+						<input type="password" name="Password" class="form-control" placeholder="Password">
+					  </div>
+					  <button type="submit" class="btn btn-success">Save network</button>
+					  <button type="cancel" class="btn btn-link">Cancel</button>
+					</form>
 				</div>
 			  </div>
 			</div>
 			
-			<!-- Sensor adjustment config -->
-			<div>
-			  <div class="panel panel-default">
-				<div class="panel-heading">
-				  <h3 class="panel-title">Cron Jobs</h3>
-				</div>
-                             
-                                    <input id="enabled1" onclick="check1();" type="checkbox" unchecked /> Enabled 1
-                                    <br />
-				<div class="panel-body-1-low">
-                                    <table>
-                                        <tr> 
-                                        <th> Start 1&nbsp </th>
-                                        <th><div class="selector11"></div> </th>
-                                        </tr>
-                                        <tr> 
-                                        <th> Stop 1&nbsp </th>
-                                        <th><div class="selector12"></div> </th>
-                                        </tr>
-                                    </table>
-				</div>
-				<div class="panel-body-2">
-                                    <form action="">
-                                        <input id="enabled2" onclick="check2();" type="checkbox" unchecked /> Enabled 2
-                                        <br />
-                                    </form>
-                                    <div class="panel-body-2-low">
-                                        <table>
-                                            <tr> 
-                                            <th> Start 2&nbsp </th>
-                                            <th><div class="selector21"></div> </th>
-                                            </tr>
-                                            <tr> 
-                                            <th> Stop 2&nbsp </th>
-                                            <th><div class="selector22"></div> </th>
-                                            </tr>
-                                        </table>
-                                    </div>
-                                </div>
-				<div class="panel-body-3">
-                                    <form action="">
-                                        <input id="enabled3" onclick="check3();" type="checkbox" unchecked/> Enabled 3
-                                        <br />
-                                    </form>
-                                    <div class="panel-body-3-low">
-					<table>
-                                            <tr> 
-                                            <th> Start 3&nbsp </th>
-                                            <th><div class="selector31"></div> </th>
-                                            </tr>
-                                            <tr> 
-                                            <th> Stop 3&nbsp </th>
-                                            <th><div class="selector32"></div> </th>
-                                            </tr>
-					</table>				
-                                    </div>
-                                </div>
-				<div class="panel-body-4">
-                                    <form action="">
-                                        <input id="enabled4" onclick="check4();" type="checkbox" unchecked/> Enabled 4
-                                        <br />
-                                    </form>
-                                    <div class="panel-body-4-low">
-                                        <table>
-                                            <tr> 
-                                            <th> Start 4&nbsp </th>
-                                            <th><div class="selector41"></div> </th>
-                                            </tr>
-                                            <tr> 
-                                            <th> Stop 4&nbsp </th>
-                                            <th><div class="selector42"></div> </th>
-                                            </tr>
-                                        </table>
-                                    </div>
-				</div>
-				<div class="panel-body-5">
-                                    <form action="">
-                                        <input id="enabled5" onclick="check5();" type="checkbox" unchecked/> Enabled 5
-                                        <br />
-                                    </form>
-                                    <div class="panel-body-5-low">
-                                        <table>
-                                            <tr> 
-                                            <th> Start 5&nbsp </th>
-                                            <th><div class="selector51"></div> </th>
-                                            </tr>
-                                            <tr> 
-                                            <th> Stop 5&nbsp </th>
-                                            <th><div class="selector52"></div> </th>
-                                            </tr>
-                                        </table>
-                                    </div>
-				</div>
-				<div class="panel-body-6">
-                                    <form action="">
-                                        <input id="enabled6" onclick="check6();" type="checkbox" unchecked/> Enabled 6
-                                        <br />
-                                    </form>
-                                    <div class="panel-body-6-low">
-                                        <table>
-                                            <tr> 
-                                            <th> Start 6&nbsp </th>
-                                            <th><div class="selector61"></div> </th>
-                                            </tr>
-                                            <tr> 
-                                            <th> Stop 6&nbsp </th>
-                                            <th><div class="selector62"></div> </th>
-                                            </tr>
-                                        </table>
-                                    </div>
-				</div>
-                                <button type="submit" class="btn btn-success">Save correction</button>
-                                <button type="cancel" class="btn btn-link">Cancel</button>          
-			  </div>
-			</div>
+
+			
 		</div>
       </div>
+
     </div> <!-- /container -->
   </body>
 </html>

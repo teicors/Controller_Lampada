@@ -28,6 +28,7 @@
       <df name="python">
       </df>
       <df name="web">
+        <in>setup.html</in>
       </df>
       <df name="web_old">
       </df>

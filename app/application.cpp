@@ -1,4 +1,4 @@
-// #include <user_config.h>
+#include <user_config.h>
 #include <SmingCore.h>
 
 ///////////////////////////////////////////////////////////////////
@@ -16,6 +16,8 @@
 //#include "../include/FreeSansBold9pt7b.h"
 //#include "../include/DSEG7ClassicRegular18pt7b.h"
 #include <sming/core/SystemClock.h>
+#include <libraries/Timezone/Timezone.h>
+/* // https://github.com/JChristensen/Timezone */
 
 #define TYPEOFBOARD 00
 
@@ -30,27 +32,6 @@
 
 
 
-/*
- * Hardware SPI mode:
- * GND      (GND)         GND
- * VCC      (VCC)         3.3v
- * D0       (CLK)         GPIO14   D5
- * D1       (MOSI)        GPIO13   D7
- * RES      (RESET)       GPIO16   D0
- * DC       (DC)          GPIO0    D3
- * CS       (CS)          GPIO2    D4
- */
-    
-#define TFT_SCLK 	14 /* D5 */
-#define TFT_MOSI 	13 /* D7 */
-#define TFT_RST  	16 /* D0 */
-#define	TFT_DC   	15 /* D8 */ // 15 8  
-#define TFT_CS   	4  /* D2 */ //  4 2
-
-#define PIN_BUTTON      5  /* D1 */ //  5 1
-#define PIN_PWM         2  /* D4 */ //  2 4
-#define PIN_BUZZER      0  /* D3 */ //  0 3
-
 #if LCD == 0
 // Do not need the board's setup 
 #else
@@ -61,7 +42,7 @@ Adafruit_ST7735_AS tft = Adafruit_ST7735_AS(TFT_CS, TFT_DC, TFT_RST);
 
 #define MAX_READ 101
 
-#define JSON_HOST "192.168.1.120"
+#define JSON_HOST "10.42.0.1"
 #define JSON_PORT 5008
 
 Timer ButtonTimer;
@@ -70,8 +51,8 @@ Timer CronTimer;
 DateTime ShowMyTime;
 
 int inter0;
-int verso;
-int32_t read0, last0;
+int verso, data_to_send;
+// int32_t read0, last0;
 String StrTime;
 uint32_t startTime;
 
@@ -81,6 +62,15 @@ LampMessage LampMsg;
 uint8_t pins[1] = {PIN_PWM}; // List of pins that you want to connect to pwm
 HardwarePWM HW_pwm(pins, 1);
 void onNtpReceive(NtpClient& client, time_t timestamp);
+void DisplayTimeClock(uint8_t hour, uint8_t minutes, uint8_t seconds);
+void DisplayDateClock(uint8_t day, uint8_t month, uint8_t year);
+
+//Central European Time (Frankfurt, Paris)
+TimeChangeRule CEST = {"CEST", Last, Sun, Mar, 2, 120};     //Central European Summer Time
+TimeChangeRule CET = {"CET ", Last, Sun, Oct, 3, 60};       //Central European Standard Time
+Timezone CE(CEST, CET);
+TimeChangeRule *tcr;        //pointer to the time change rule, use to get the TZ abbrev
+
 
 #if LCD == 3
 FTPServer ftp;
@@ -88,7 +78,7 @@ FTPServer ftp;
 
 //
 // TimedCommand 1 : PowerOff
-// TimedCommand 2 : Alarm
+// TimedCommand 2 : AlarmOn
 // TimedCommand 3 : Buzzer
 //
 
@@ -135,13 +125,20 @@ void JsonOnReadyToSend(TcpClient& client, TcpConnectionEvent sourceEvent)
         DynamicJsonBuffer jsonBuffer;
         JsonObject& MsgToSend = jsonBuffer.createObject();
 
-        MsgToSend["basetta"] = WifiStation.getIP().toString();
-        MsgToSend["elemento"] = LampMsg.elemento;
-        MsgToSend["evento"]  = LampMsg.evento;
-        MsgToSend["stato"]   = LampMsg.stato;
-        MsgToSend["valore"]  = LampMsg.valore;
+        MsgToSend["ip"]        = WifiStation.getIP().toString();
+        
+        MsgToSend["pulsante"]  = LampMsg.pulsante;
+        MsgToSend["evento"]    = LampMsg.evento;
+        MsgToSend["stato"]     = LampMsg.stato;
+        MsgToSend["valore"]    = LampMsg.valore;
 
-
+//        MsgToSend["slenabled"] = LampCfg.sleepenabled;
+//        MsgToSend["alenabled"] = LampCfg.alarmenabled;
+//        MsgToSend["buenabled"] = LampCfg.buzzerenabled;
+//        MsgToSend["alarmtime"] = LampCfg.alarmtime;
+//        MsgToSend["sleeptime"] = LampCfg.sleeptime;
+//        MsgToSend["powered"]   = LampCfg.powered;
+        
         client.sendString("POST /json HTTP/1.1\r\n");
         client.sendString("Accept: */*\r\n");
         client.sendString("Content-Type: application/json;charset=utf-8\r\n");
@@ -203,21 +200,30 @@ void flashaled()
 
 
 void check_button0() {
-  read0 = micros();
-  if (cron.setAlarm==false and digitalRead(PIN_BUTTON)==1 ) {
+//  read0 = micros();
+//  if (cron.setAlarm==false and digitalRead(PIN_BUTTON)==1 ) {
         if (inter0==true) {   
-            if (last0 < read0-40000) 
-            {
-                last0=read0;
+//            if (last0 < read0-40000) 
+//            {
+//                last0=read0;
                 LampCfg.lamp=LampCfg.lamp+2*verso;
                 if (LampCfg.lamp<0) {LampCfg.lamp=0;}
                 if (LampCfg.lamp>MAX_READ-1) {LampCfg.lamp=MAX_READ-1; }
                 setpwn(LampCfg.lamp);
                 Serial.printf("Lamp %d\n",LampCfg.lamp);
-            }
+//            }
         }
-   
+     if (data_to_send==1) {
+        LampMsg.evento = LIGHT;
+        LampMsg.stato=Lampada_radiocontrollata;
+        LampMsg.valore=LampCfg.lamp;
+        LampMsg.pulsante=0;
+        saveConfig();
+        sendData();
+        data_to_send=0;    
     }
+  
+//    }
 }
 
 void IRAM_ATTR interruptHandler01();
@@ -241,64 +247,14 @@ void IRAM_ATTR interruptHandler01()
     Serial.print("Release button\n");
     detachInterrupt(PIN_BUTTON);
     attachInterrupt(PIN_BUTTON, interruptHandler00, RISING);
+    data_to_send=1;
 }        
 
-
-////// WEB Clock //////
-Timer clockRefresher;
-HttpClient clockWebClient;
-uint32_t lastClockUpdate = 0;
-DateTime clockValue;
-const int clockUpdateIntervalMs = 10 * 60 * 1000; // Update web clock every 10 minutes
-
-void onClockUpdating(HttpClient& client, bool successful)
-{
-    if (!successful)
-    {
-            debugf("CLOCK UPDATE FAILED %d (code: %d)", successful, client.getResponseCode());
-            lastClockUpdate = 0;
-            return;
-    }
-
-    // Extract date header from response
-    clockValue = client.getServerDate();
-    if (clockValue.isNull()) clockValue = client.getLastModifiedDate();
-}
-
-void refreshClockTime()
-{
-    uint32_t nowClock = millis();
-    if (nowClock < lastClockUpdate) lastClockUpdate = 0; // Prevent overflow, restart
-    if ((lastClockUpdate == 0 || nowClock - lastClockUpdate > clockUpdateIntervalMs) && !clockWebClient.isProcessing())
-    {
-            clockWebClient.downloadString("google.com", onClockUpdating);
-            lastClockUpdate = nowClock;
-    }
-    else if (!clockValue.isNull())
-            clockValue.addMilliseconds(clockRefresher.getIntervalMs());
-
-    if (!clockValue.isNull())
-    {
-            StrTime = clockValue.toShortDateString() + " " + clockValue.toShortTimeString(false);
-
-            if ((millis() % 2000) > 1000)
-                    StrTime.setCharAt(13, ' ');
-            else
-                    StrTime.setCharAt(13, ':');
-    }
-}
-
-void startWebClock()
-{
-    lastClockUpdate = 0;
-    clockRefresher.stop();
-    clockRefresher.initializeMs(500, refreshClockTime).start();
-}
 
 
 void setpwn(int led0)
 {
-    HW_pwm.analogWrite(PIN_PWM, led0*10);
+    HW_pwm.analogWrite(PIN_PWM, led0*10*LampCfg.powered);
 }
 
 #if LCD==3
@@ -322,11 +278,10 @@ void draw_clock(void) {
     int8_t DayofWeek; // Sunday is day 0
     int8_t Month; // Jan is month 0
     int16_t Year;  // Full Year numer
-
-
-    ShowMyTime.convertFromUnixTime(SystemClock.now(),&Second,&Minute,&Hour,&Day,&DayofWeek,&Month,&Year);
+    ShowMyTime.convertFromUnixTime(CE.toLocal(SystemClock.now(), &tcr),&Second,&Minute,&Hour,&Day,&DayofWeek,&Month,&Year);
 #if LCD == 0
-    DisplayTime(Hour, Minute, Second);
+    DisplayTimeClock(Hour, Minute, Second);
+    DisplayDateClock(Day, Month, Year);
 #else    
 //    tft.fillScreen(ST7735_BLACK);
 //    tft.setFont(&DSEG7ClassicRegular18pt7b);
@@ -378,34 +333,30 @@ void draw_clock(void) {
 
 void CronLoop()
 {
-//    debugf("CronLoop");
     cron.loop();
     if (cron.setAlarm==true) {
-        Serial.print("Buongiorno \n");
+//        Serial.print("Buongiorno \n");
         TimerLed.initializeMs(500, flashaled).start();
         cron.setAlarm=false;
-    }
-//    else {
-//        TimerLed.initializeMs(500, flashaled).stop();
-//        setpwn(LampCfg.lamp);
-//    }
-    if (cron.setBuzzer==true) {
-        TimerLed.initializeMs(500, flashaled).start();
-    }
-    if (cron.setPower==true) {
-        Serial.print("Buonanotte \n");
-//        LampCfg.lamp=0;
-        verso=1;
-//        setpwn(LampCfg.lamp);
-        setpwn(0);
-        cron.setPower=false;
     }
     if (cron.AlarmSeconds>0)
     {
         cron.AlarmSeconds--;
-        if (cron.AlarmSeconds=0) {TimerLed.initializeMs(500, flashaled).stop();}
+        if (cron.AlarmSeconds==0) {
+            TimerLed.initializeMs(500, flashaled).stop(); 
+            setpwn(LampCfg.lamp);
+        }
     }
-//    if (cron.AlarmSeconds=0) {TimerLed.initializeMs(500, flashaled).stop();}
+    if (cron.setBuzzer==true) {
+        TimerLed.initializeMs(500, flashaled).start();
+        cron.setBuzzer=false;
+    }
+    if (cron.setPower==true) {
+//        Serial.print("Buonanotte \n");
+        verso=1;
+        setpwn(0);
+        cron.setPower=false;
+    }
     draw_clock();
 }
 
@@ -413,7 +364,9 @@ void SendPresence()
 {
 //    publishMessage(WifiStation.getIP().toString().c_str(),9999,-1);
     LampMsg.evento=SEND_PRESENCE;
-    LampMsg.elemento=Lampada_radiocontrollata;
+    LampMsg.stato=Lampada_radiocontrollata;
+    LampMsg.valore=LampCfg.lamp;
+    LampMsg.pulsante=0;
     sendData();
 }
 // Callback example using defined class ntpClientDemo
@@ -468,12 +421,27 @@ void connectOk()
 // Will be called when WiFi station timeout was reached
 void connectFail()
 {
-    debugf("I'm NOT CONNECTED!");
-    WifiStation.waitConnection(connectOk, 10, connectFail); // Repeat and check again
+	debugf("connection FAILED");
+	WifiAccessPoint.config("LampConfig", "", AUTH_OPEN);
+	WifiAccessPoint.enable(true);
+	// Stop main screen output
+//	procTimer.stop();
+//	displayTimer.stop();
+//	lcd.clear();
+
+//	lcd.setCursor(0,0);
+//	lcd.print("WiFi LampConfig");
+//	lcd.setCursor(0,1);
+//	lcd.print("  ");
+//	lcd.print(WifiAccessPoint.getIP());
+
+	startWebServer();
+	WifiStation.waitConnection(connectOk); // Wait connection
 }
 
 void init()
 {
+
     spiffs_mount(); // Mount file system, in order to work with files
     Serial.begin(SERIAL_BAUD_RATE); // 115200 or 9600 by default
     delay(3000);
@@ -484,6 +452,7 @@ void init()
     cron.AlarmSeconds=0;
     cron.PrintJobs();
     verso=1;
+    data_to_send=0;
 
 #if LCD == 0
     LcdInitialise();
@@ -494,16 +463,18 @@ void init()
     draw_clock();
 #endif
     // set timezone hourly difference to UTC
-    SystemClock.setTimeZone(1);   
+    SystemClock.setTimeZone(0);   
     loadConfig();
 //    pinMode(1,OUTPUT);
     pinMode(PIN_BUTTON, INPUT);
     attachInterrupt(PIN_BUTTON, interruptHandler00, RISING);
     CronTimer.initializeMs(1000, CronLoop).start();
     ButtonTimer.initializeMs(50, check_button0).start(); 
-        
+
     WifiStation.enable(true);
-    WifiStation.config(WIFI_SSID, WIFI_PWD); // Put you SSID and Password here
-    WifiStation.waitConnection(connectOk, 30, connectFail); // We recommend 20+ seconds at start
+    WifiAccessPoint.enable(false);
+    WifiStation.config(LampCfg.NetworkSSID, LampCfg.NetworkPassword);
+
+    WifiStation.waitConnection(connectOk, 10, connectFail); // We recommend 20+ seconds at start
     setpwn(LampCfg.lamp);
 }

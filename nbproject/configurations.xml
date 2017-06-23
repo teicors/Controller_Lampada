@@ -7,6 +7,9 @@
         <in>configuration.cpp</in>
         <in>webserver.cpp</in>
       </df>
+      <df name="web">
+        <in>setup.html</in>
+      </df>
     </df>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
@@ -73,6 +76,8 @@
       <item path="app/configuration.cpp" ex="false" tool="1" flavor2="4">
       </item>
       <item path="app/webserver.cpp" ex="false" tool="1" flavor2="4">
+      </item>
+      <item path="web/setup.html" ex="false" tool="3" flavor2="0">
       </item>
     </conf>
   </confs>

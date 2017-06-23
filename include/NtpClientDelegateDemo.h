@@ -5,20 +5,19 @@
 class ntpClientDemo
 {
 public:
-	ntpClientDemo()
-	{
-		ntpcp = new NtpClient("pool.ntp.org", 300, NtpTimeResultDelegate(&ntpClientDemo::ntpResult, this));
-	};
+    ntpClientDemo()
+    {
+        ntpcp = new NtpClient("pool.ntp.org", 3600, NtpTimeResultDelegate(&ntpClientDemo::ntpResult, this));
+    };
 
-	void ntpResult(NtpClient& client, time_t ntpTime)
-	{
-		SystemClock.setTime(ntpTime, eTZ_UTC);
-		Serial.print("ntpClientDemo Callback Time_t = ");
-		Serial.print(ntpTime);
-		Serial.print(" Time = ");
-		Serial.println(SystemClock.getSystemTimeString());
-
-	}
+    void ntpResult(NtpClient& client, time_t ntpTime)
+    {
+        SystemClock.setTime(ntpTime, eTZ_UTC);
+        Serial.print("ntpClientDemo Callback Time_t = ");
+        Serial.print(ntpTime);
+        Serial.print(" Time = ");
+        Serial.println(SystemClock.getSystemTimeString());
+    }
 
 private:
 	NtpClient *ntpcp;

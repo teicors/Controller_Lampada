@@ -6,13 +6,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
         <!-- Bootstrap core -->
-    <link rel="stylesheet" href="http://10.42.0.1/templates/jquery-ui.css">
     <link rel="stylesheet" href="http://10.42.0.1/templates/bootstrap.css"> 
+    <link rel="stylesheet" href="http://10.42.0.1/templates/jquery-ui.css">
     <link rel="stylesheet" href="http://10.42.0.1/templates/jquery-ui.min.css">
-    <link rel="stylesheet" href="http://10.42.0.1/templates/jquery.ui.timepicker.css">  
 
+    <link rel="stylesheet" href="http://10.42.0.1/templates/style2.css">
     
-<!--    <script type="text/javascript" src="https://fgelinas.com/code/timepicker/include/jquery-1.9.0.min.js"></script>  -->
+    
+    <!--    <link rel="stylesheet" href="http://fileserver/templates/jquery.ui.timepicker.css">   -->
+
+
+    <!--    <link href="http://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css" rel="stylesheet">  -->
+    <link href="http://10.42.0.1/templates/ionicons.min.css" rel="stylesheet"> 
+ 
+
+    <!--    <script type="text/javascript" src="https://fgelinas.com/code/timepicker/include/jquery-1.9.0.min.js"></script>  -->
     <script src="http://10.42.0.1/templates/jquery.js"></script>
     <script src="http://10.42.0.1/templates/jquery-ui.js"></script>
 <!--
@@ -21,10 +29,10 @@
     <script type="text/javascript" src="https://fgelinas.com/code/timepicker/include/ui-1.10.0/jquery.ui.tabs.min.js"></script>
     <script type="text/javascript" src="https://fgelinas.com/code/timepicker/include/ui-1.10.0/jquery.ui.position.min.js"></script>
 -->
-    <script src="http://10.42.0.1/templates/jquery.ui.touch-punch.min.js"></script>
+    <script src="jquery.ui.touch-punch.min.js"></script>
 <!--    <script src="server/templates/moment.js"></script> -->
     
-    <script src="http://10.42.0.1/templates/jquery.ui.timepicker.js"></script>
+<!--    <script src="http://10.42.0.1/templates/jquery.ui.timepicker.js"></script> -->
     
 
     <title>Light Control WiFi module</title>
@@ -32,6 +40,7 @@
 
  
         <style>
+		.main { font-size: 63px; }
             #custom-handle {
               width: 3em;
               height: 1.6em;
@@ -95,28 +104,58 @@
                 color: white;
             }
 
-
+            
+            
         </style>
 
         <script>
-        $(document).ready(function() {
-          $('.powertime').timepicker({
-                onClose: function(powertime, inst) {
-                    $.post( "/api/off", { time: powertime, state: "1" } );;
-                }
-            });
-          $('.alarmtime').timepicker({
-                onClose: function(alarmtime, inst) {
-                    $.post( "/api/alarm", { time: alarmtime, state: "1" } );;
-                }
-            });
-          if ({powerenabled} == 1) {$("#poweroff").prop('checked', true);};
-          if ({alarmenabled} == 1) {$("#alarm").prop('checked', true);};
-          if ({buzzerenabled} == 1) {$("#buzzer").prop('checked', true);};
-          checkpower();
-          checkalarm();
-          checkbuzzer();
+
+        $(window).load(function() {
+
+                        $('#sleep').on('click', function(){
+                                $(this).toggleClass('on');
+                                if ( $( this ).hasClass( "on" ) ) {
+                                  $.post( "/api/swsleep", { state: 1 } );
+                                  } else {
+                                  $.post( "/api/swsleep", { state: 0 } );
+                                }
+                        });
+                        $('#alarm').on('click', function(){
+                                $(this).toggleClass('on');
+                                if ( $( this ).hasClass( "on" ) ) {
+                                  $.post( "/api/swalarm", { state: 1 } );
+                                  } else {
+                                  $.post( "/api/swalarm", { state: 0 } );
+                                }
+                        });
+                        $('#buzzer').on('click', function(){
+                                $(this).toggleClass('on');
+                                if ( $( this ).hasClass( "on" ) ) {
+                                  $.post( "/api/swbuzzer", { state: 1 } );
+                                  } else {
+                                  $.post( "/api/swbuzzer", { state: 0 } );
+                                }
+                        });
+                        $('#power').on('click', function(){
+                                $(this).toggleClass('on');
+                                if ( $( this ).hasClass( "on" ) ) {
+                                  $.post( "/api/swpower", { state: 1 } );
+                                  } else {
+                                  $.post( "/api/swpower", { state: 0 } );
+                                }
+                        });
+
         });
+
+        $(document).ready(function(){
+
+                if ({sleepenabled} == 1)  {$("#sleep").toggleClass('on'); };
+                if ({alarmenabled} == 1)  {$("#alarm").toggleClass('on'); };
+                if ({buzzerenabled} == 1) {$("#buzzer").toggleClass('on');};
+                if ({powered} == 1)       {$("#power").toggleClass('on');};
+        });
+
+
 
         $(function() { 
           var handle = $( "#custom-handle" );
@@ -139,46 +178,7 @@
           });
         } );
 
-        function checkpower(){
-            if ($('#poweroff').is(":checked")) {
-                $("#poweroff").prop('checked', false);
-                $("#poweroff").hide();
-                $('#bottonepw').css('.button1Set');
-                $(".panel-body-power-low").show();
-                $.post( "/api/off", { time: powertime.value, state: "1" } );;
-           } else {
-                $('#bottonepw').css('.button1Reset');
-                $("#poweroff").prop('checked', true);
-                $("#poweroff").hide();
-                $(".panel-body-power-low").hide();
-                $.post( "/api/off", { time: powertime.value, state: "0" } );
-           }
-        }
-
-        function checkalarm(){
-            if ($('#alarm').is(":checked")) {
-                $("#alarm").prop('checked', false);
-                $("#alarm").hide();
-                $('#bottoneal').css('.button1Set');
-               $(".panel-body-alarm-low").show();
-               $.post( "/api/alarm", { time: alarmtime.value, state: "1" } );
-           } else {
-                $('#bottoneal').css('.button1Reset');
-                $("#alarm").prop('checked', true);
-                $("#alarm").hide();
-               $(".panel-body-alarm-low").hide();
-               $.post( "/api/alarm", { time: alarmtime.value, state: "0" } );
-           }
-        }
-
-        function checkbuzzer(){
-            if ($('#buzzer').is(":checked")) {
-               $.post( "/api/buzzer", { time: alarmtime.value, state: "1" } );
-           } else {
-               $.post( "/api/buzzer", { time: alarmtime.value, state: "0" } );
-           }
-        }
-
+        
         </script>
         
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
@@ -195,7 +195,7 @@
         <nav>
           <ul class="nav nav-pills pull-right">
             <li role="presentation" class="active"><a href="/">Home</a></li>
-<!--            <li role="presentation">               <a href="/config">Configuration</a></li> -->
+            <li role="presentation">               <a href="/config">Configuration</a></li>
           </ul>
         </nav>
         <h3 class="text-muted">Light Control WiFi module</h3>
@@ -204,7 +204,8 @@
         <div class="row">
             <h2>&nbsp;</h2>
             <div class="col-xs-offset-2">
-
+                    <table>
+                    <tr>
                     <div class="col-xs-10 col-md-5">
                       <div class="panel panel-default">
 
@@ -220,80 +221,43 @@
 
                       </div>
                     </div>
-
+                                    
+                    </tr>
+                    <tr>
+                                    
+                                    
                     <div class="col-xs-10 col-md-5"> 
                         <div class="panel panel-default"> 
-                            <div class="panel-heading-power">
-<!--                                <button class="button button1">Green</button> -->
-                                <button id="bottonepw"  style="width:100%;heigth:100%;" onclick="checkpower();" class="button button1">Power off</button>
-                                <!--                                <h3 class="panel-title">Power Off</h3> -->
-                            </div>
-                            <div class="panel-body">
-                                <table>
-                                <tr>
-                                <th>
-                                <form action="">
-                                    <input id="poweroff" onclick="checkpower();" type="checkbox" unchecked/>
-                                    <br />
-                                </form>
-                                </th>
-                                <th>
-                                    <div class="panel-body-power-low">
-                                        <input id="powertime" size="4" class="powertime" data-format="HH:mm" data-template="HH : mm" name="datetime" value="{powertime}" text-align: center type="text">
-                                    </div>
-                                </th>
-                                </tr>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-xs-10 col-md-5"> 
-                        <div class="panel panel-default"> 
-<!--
-                            <div class="panel-heading">
-                              <h3 class="panel-title">Alarm</h3>
-                            </div>
--->
-                            <div class="panel-heading-alarm">
-<!--                                <button class="button button1">Green</button> -->
-                                <button id="bottoneal"  style="width:100%;heigth:100%;" onclick="checkalarm();" class="button button1">Alarm</button>
-                                <!--                                <h3 class="panel-title">Power Off</h3> -->
-                            </div>
                             
-                            <div class="panel-body">
-                                <table>
-                                <tr>
-                                <th>
-                                <form action="">
-                                    <input id="alarm" onclick="checkalarm();" type="checkbox" unchecked/>
-                                    <br />
-                                </form>
-                                </th>
-                                <th>
-                                    <div class="panel-body-alarm-low">
-                                        <input id="alarmtime" size="4" class="alarmtime" data-format="HH:mm" data-template="HH : mm" name="datetime" value="{alarmtime}" text-align: center type="text">
-                                    </div>
-                                </th>
-                                <th>
-                                    <div class="panel-body-alarm-low">
-                                        <br />
-                                    </div>
-                                </th>
-                                <th>
-                                    <div class="panel-body-alarm-low">
-                                    <input id="buzzer" onclick="checkbuzzer();" type="checkbox" unchecked/> Buzzer
-                                    </div>
-                                </th>
-                                </tr>
-                                </table>
+                            <div class="button-group-navigation" target="_blank">
+                                
+        <section>
+                <a_1 href="#" id="sleep">&#xF011;</a_1>
+                <span></span>
+        </section>
+        <section>
+                <a_1 href="#" id="alarm">&#xF0A2;</a_1>
+                <span></span>
+        </section>
+        <section>
+                <a_1 href="#" id="buzzer">&#xF09E;</a_1>
+                <span></span>
+        </section>
+        <section>
+                <a_1 href="#" id="power">&#xF011;</a_1>
+                <span></span>
+        </section>
+                                
+                                
                             </div>
                         </div>
                     </div>
 
-            </div>
+                    </tr>
+
         </div>
   </div>
 
+     
   </body>
 </html>

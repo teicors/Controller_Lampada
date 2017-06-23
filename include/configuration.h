@@ -27,20 +27,26 @@
 #define ALARM 2
 #define POWER 3
 #define BUZZER 4
-#define TEMPERATURE 5
-#define SWITCH 6
-#define PIR 7
-#define AMPERE 8
-#define xxx 9
-#define yyy 10
-
-#define Lampada_radiocontrollata 1
-#define Pulsantiera_4_posti 2
-#define Rivelatore_temperatura 3
-#define Cronotermostato 4
+#define SLEEP 5
+#define TEMPERATURE 6
+#define SWITCH 7
+#define PIR 8
+#define AMPERE 9
 
 #define SEND_PRESENCE 9999
 #define CONFIGURATION 9998
+
+#define Lampada_radiocontrollata 1
+#define Pulsantiera_4_posti 2
+#define Cronotermostato 3
+#define Rivelatore_temperatura 4
+#define Rivelatore_movimento 5
+#define Rivelatore_luce 6
+#define Rivelatore_gas 7
+#define Rivelatore_pressione 8
+#define Rivelatore_acqua 9
+#define Termometro 10
+#define Amperometro 10
 
 #define LCD 0
 // 0 BN
@@ -55,17 +61,20 @@ struct LampConfig
 	{
             lamp=50;
             alarmtime="09:30";
-            powertime="23:30";
-            powerenabled=0;
+            sleeptime="23:30";
+            sleepenabled=0;
             alarmenabled=0;
             buzzerenabled=0;
+            powered=1;
+            NetworkSSID="";
+            NetworkPassword="";
 	}
 
 	String NetworkSSID;
 	String NetworkPassword;
  
-        String alarmtime, powertime;
-        int lamp, powerenabled,alarmenabled, buzzerenabled;
+        String alarmtime, sleeptime;
+        int lamp, sleepenabled,alarmenabled, buzzerenabled, powered;
         
 };
 
@@ -73,12 +82,12 @@ struct LampMessage
 {
     LampMessage()
     {
-        elemento=0;
+        pulsante=0;
         evento=0;
         stato=0;
         valore=0;
     }
-    int evento, stato, valore, elemento;
+    int evento, stato, valore, pulsante;
 };
 
 extern void loadConfig();

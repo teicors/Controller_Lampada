@@ -62,90 +62,120 @@ class data_per_post:
 #            count=data["count"]
 #            basetta=data["basetta"]
 # {"lamp":50,"powerenabled":0,"alarmenabled":0,"buzzerenabled":0,"alarmtime":"09:30","powertime":"23:30"}
-
-            basetta=data["basetta"]                
-            evento=data["evento"]                
-            elemento=data["elemento"]                
+# {"ip":"10.42.0.61","pulsante":0,"stato":9999,"valore":50,"slenabled":0,"alenabled":0,"buenabled":0,"alarmtime":"09:30","sleeptime":"23:30","powered":1}
+            basetta=data["ip"]  
+            
+            evento=data["evento"]
             stato=data["stato"]   
-            valore=data["valore"]                
-#            led=9999
-#            else:
-#                basetta=data["basetta"]
-#                led=data["sensorid"]
+            valore=data["valore"]
+            pulsante=data["pulsante"]
+
+#            buzzerenabled=data["buenabled"]
+#            alarmenabled=data["alenabled"]
+#            sleepenabled=data["slenabled"]
+#            sleeptime=data["sleeptime"]                
+#            alarmtime=data["alarmtime"]                
+#            powered=data["powered"]    
+
+#define LIGHT 1
+#define ALARM 2
+#define POWER 3
+#define BUZZER 4
+#define SLEEP 5
+#define TEMPERATURE 6
+#define SWITCH 7
+#define PIR 8
+#define AMPERE 9
+#define xxx 10
+#define yyy 11
+#define SEND_PRESENCE 9999
+#define CONFIGURATION 9998
+
             con = mdb.connect('localhost', 'illuminazione', 'illuminazione', 'illuminazione'); 
             cur = con.cursor(mdb.cursors.DictCursor)
-            presence=0
+            cur1 = con.cursor(mdb.cursors.DictCursor)
             if evento == 9999:
-                presence=1
                 print("Received presence")
-                sql="select * from illuminazione.matricole where ip='%s';" % (basetta)
+                sql="select elemento, bistate from illuminazione.impianto where matricola='%s';" % (basetta)
                 cur.execute(sql)
                 if cur.rowcount==0:
                     parts = basetta.split('.')
                     matricola=(int(parts[2])*256+int(parts[3]))
-                    sql="insert into illuminazione.matricole (ip,critica,attiva,matricola,tipologia) values ('%s',0,0,'%s',%d);" % (basetta, matricola, elemento)
-                    cur.execute(sql)
+                    sql="insert into illuminazione.impianto (matricola, attivo) values('%s',1);" % (basetta)
+                    cur1.execute(sql)
                     con.commit()
-                sql="update illuminazione.matricole set attiva=1 where ip='%s';" % (basetta)
-                cur.execute(sql)
-                con.commit()
-                print("Presence of %s" % (basetta))
-                sql="select p.elemento from elemento p, impianto i, matricole m \
-                    where time(now()) between p.ora_inizio and p.ora_fine \
-                    and p.elemento=i.elemento \
-                    and m.ip='%s' \
-                    and i.matricola=m.matricola \
-                    and m.attiva=1;" % (basetta)
-            if evento == 9998:
-                presence=0
-            else:
-                print "i am in show"
-                print "Valori Basetta %s evento %s elemento %s stato %s tempo %s" % (basetta, evento, elemento, stato, valore)
-                logger.debug("Light management")
-                sql="select p.elemento from elemento p, impianto i, matricole m \
-                    where time(now()) between p.ora_inizio and p.ora_fine \
-                    and p.elemento=i.elemento \
-                    and m.ip='%s' \
-                    and i.pulsante=%s \
-                    and i.matricola=m.matricola \
-                    and m.attiva=1;" % (basetta, elemento)
-            with con:
-                cur = con.cursor(mdb.cursors.DictCursor)
-                cur.execute(sql)
-                if cur.rowcount>0:
+                    
+#                    sql="insert into illuminazione.elemento (elemento,critica,attiva,matricola,tipologia) values ('%s',0,0,'%s',%d);" % (elemento, matricola, pulsante)
+#                    cur.execute(sql)
+#                    con.commit()
+                else:
                     rows = cur.fetchall()
                     for row in rows:
                         elemento=row['elemento']
-                        #
-                        # Inserire verifica sul tipo di dato ricevuto: solo da pulsantiera eseguire il codice qui sotto
-                        #
-                        if (presence==0):
-                            sql="update illuminazione.elemento set stato=abs(stato-1) where elemento=%s\
-                                and (now()) between ora_inizio and ora_fine " % (elemento)
-                            cur.execute(sql)
-                            con.commit()
+                        sql="update illuminazione.impianto set attivo=1 where matricola='%s';" % (basetta)
+                        cur1.execute(sql)
+                        con.commit()
+                print("Presence of %s" % (basetta))
+                return
+            if evento == 1:
+                print "i am in show"
+                print "Valori Basetta '%s' stato '%s' evento '%s' valore '%s' pulsante '%s'" % (basetta, stato, evento, valore, pulsante)
+                logger.debug("Light management")
+                sql="select e.elemento, i.bistate from illuminazione.elemento e, illuminazione.impianto i \
+                     where e.elemento=i.elemento \
+                     and current_time() between concat(e.ora_inizio,':00') and concat(e.ora_fine,':59') \
+                     and i.matricola='%s' \
+                     and i.pulsante=%s \
+                     and e.attivo=1;" % (basetta, pulsante)
+                with con:
+                    cur = con.cursor(mdb.cursors.DictCursor)
+                    cur.execute(sql)
+                    if cur.rowcount>0:
+                        rows = cur.fetchall()
+                        for row in rows:
+                            elemento=row['elemento']
+                            bistate=row['bistate']
+                            #
+                            # Inserire verifica sul tipo di dato ricevuto: solo da pulsantiera eseguire il codice qui sotto
+                            #
+                            if (bistate==1):
+                                sql="update illuminazione.elemento e set valore=abs(valore-1) where elemento=%s \
+                                     and current_time() between concat(e.ora_inizio,':00') and concat(e.ora_fine,':59'); " % (elemento)
+                                cur1.execute(sql)
+                                con.commit()                                    
+                                sql="update illuminazione.elemento e set valore=0 where elemento=%s \
+                                     and current_time() not between concat(e.ora_inizio,':00') and concat(e.ora_fine,':59'); " % (elemento)
+                                cur1.execute(sql)
+                                con.commit()                                    
+                            if (bistate==0):
+                                sql="update illuminazione.elemento e set valore=%s where elemento=%s \
+                                     and current_time() between concat(e.ora_inizio,':00') and concat(e.ora_fine,':59'); " % (valore, elemento)
+                                cur1.execute(sql)
+                                con.commit()
+                                sql="update illuminazione.elemento e set valore=0 where elemento=%s \
+                                     and current_time() not between concat(e.ora_inizio,':00') and concat(e.ora_fine,':59'); " % (elemento)
+                                cur1.execute(sql)
+                                con.commit()
 
-                        sql="select c.ip, b.pulsante, a.stato from illuminazione.elemento a, illuminazione.impianto b, matricole c \
-                            where time(now()) between ora_inizio and ora_fine \
-                        and b.elemento='%s' \
-                        and c.matricola=b.matricola \
-                        and b.elemento=a.elemento \
-                        and c.attiva=1;" % (elemento)
+                            sql="select i.matricola, i.pulsante, e.valore from illuminazione.elemento e, illuminazione.impianto i \
+                                 where current_time() between concat(e.ora_inizio,':00') and concat(e.ora_fine,':59') \
+                                 and e.elemento='%s' \
+                                 and e.attivo=1;" % (elemento)
 
-                        cur.execute(sql)
-                        if cur.rowcount>0:
-                            rows = cur.fetchall()
-                            for row in rows:
-                                ip=row["ip"]
-                                led=row["pulsante"]
-                                status=row["stato"]
-                                logger.debug("Check Light management IP %s Status %s Led %s " % (ip,status,led))
-                                req = 'http://%s/api/output?status=%s&led=%s' % (ip,status,led)
-                                urllib2.urlopen(req).read()
-                else:
-                    logger.debug("Received various data")
-            con.close()
-            return
+                            cur1.execute(sql)
+                            if cur1.rowcount>0:
+                                rows = cur1.fetchall()
+                                for row in rows:
+                                    ip=row["matricola"]
+                                    pulsante=row["pulsante"]
+                                    valore=row["valore"]
+                                    logger.debug("Check Light management IP %s valore %s pulsante %s " % (ip,valore,pulsante))
+                                    req = 'http://%s/api/output?valore=%s&pulsante=%s' % (ip,valore,pulsante)
+                                    urllib2.urlopen(req).read()
+                    else:
+                        logger.debug("Received various data")
+                con.close()
+                return
         except IOError as e:
             print "I/O error({0}): {1}".format(e.errno, e.strerror)
         except ValueError:
@@ -165,20 +195,19 @@ def send_conf(text):
     con = mdb.connect('localhost', 'illuminazione', 'illuminazione', 'illuminazione');
     cur = con.cursor(mdb.cursors.DictCursor)
     logger.debug("Send configuration")
-    sql="select c.ip, b.pulsante, a.stato from illuminazione.elemento a, illuminazione.impianto b, matricole c \
-         where time(now()) between ora_inizio and ora_fine \
-    and a.elemento=b.elemento \
-    and c.matricola=b.matricola \
-    and c.attiva=1;"
+    sql="select i.matricola, i.pulsante, e.valore from illuminazione.elemento e, illuminazione.impianto i \
+         where current_time() between concat(e.ora_inizio,':00') and concat(e.ora_fine,':59') \
+         and e.elemento=i.elemento \
+         and e.attivo=1;"
     cur.execute(sql)
     if cur.rowcount>0:
         rows = cur.fetchall()
         for row in rows:
-            ip=row["ip"]
-            led=row["pulsante"]
-            status=row["stato"]
-            logger.debug("Check send_conf IP %s Status %s Led %s " % (ip,status,led))
-            req = 'http://%s/api/output?status=%s&led=%s' % (ip,status,led)
+            ip=row["matricola"]
+            pulsante=row["pulsante"]
+            valore=row["valore"]
+            logger.debug("Check send_conf IP %s valore %s pulsante %s " % (ip,valore,pulsante))
+            req = 'http://%s/api/output?valore=%s&pulsante=%s' % (ip,valore,pulsante)
             urllib2.urlopen(req).read()
     con.close()
 
@@ -186,12 +215,12 @@ def presence(text):
     con = mdb.connect('localhost', 'illuminazione', 'illuminazione', 'illuminazione');
     cur = con.cursor(mdb.cursors.DictCursor)
     logger.debug("Check presence")
-    sql="SELECT ip FROM illuminazione.matricole where attiva=1;"
+    sql="SELECT matricola FROM illuminazione.impianto where attivo=1;"
     cur.execute(sql)
     if cur.rowcount>0:
         rows = cur.fetchall()
         for row in rows:
-            ip=row['ip']
+            ip=row['matricola']
             logger.debug("Check IP %s" % (ip))
             try:
                 if subprocess.call("ping -c 1 %s" % ip , shell=True) == 0:
@@ -200,7 +229,7 @@ def presence(text):
                     print ("host appears to be down")
                     con1 = mdb.connect('localhost', 'illuminazione', 'illuminazione', 'illuminazione');
                     cur1 = con1.cursor(mdb.cursors.DictCursor)
-                    sql="update illuminazione.matricole set attiva=0 where ip='%s';" % (ip)
+                    sql="update illuminazione.matricole set attivo=0 where matricola='%s';" % (ip)
                     cur1.execute(sql)
                     con1.commit()  
                     con1.close()
