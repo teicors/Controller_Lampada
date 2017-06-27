@@ -205,6 +205,7 @@ void onSWPower(HttpRequest &request, HttpResponse &response)
     LampMsg.evento = POWER;
     LampMsg.pulsante = 0;
     LampMsg.stato = LampCfg.powered;
+    setpwn(LampCfg.lamp);
     saveConfig();
     sendData();
 //    debugf("Update onSWPower");

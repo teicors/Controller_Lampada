@@ -11,6 +11,7 @@
 #endif
 
 #define LAMP_CONFIG_FILE ".lamp.conf" // leading point for security reasons :)
+#define SWITCH_CONFIG_FILE ".switch.conf" // leading point for security reasons :)
 
 #define INT_PIN0 0   // GPIO0 d3
 #define INT_PIN2 2   // GPIO2 d4
@@ -77,6 +78,28 @@ struct LampConfig
         int lamp, sleepenabled,alarmenabled, buzzerenabled, powered;
         
 };
+
+
+struct SwitchConfig
+{
+	SwitchConfig()
+	{
+            Led0=0;
+            Led2=0;
+            Led4=0;
+            Led5=0;
+            powered=0;
+            NetworkSSID="";
+            NetworkPassword="";
+	}
+
+	String NetworkSSID;
+	String NetworkPassword;
+ 
+        int Led0, Led2, Led4, Led5, powered;
+        
+};
+
 
 struct LampMessage
 {

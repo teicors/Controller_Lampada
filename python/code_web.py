@@ -162,6 +162,10 @@ class data_per_post:
                                  and e.elemento='%s' \
                                  and e.attivo=1;" % (elemento)
 
+                            sql="select i.matricola, i.pulsante, e.valore from illuminazione.elemento e, illuminazione.impianto i \
+                                 where i.elemento=e.elemento \
+                                 and e.elemento='%s' " % (elemento)
+
                             cur1.execute(sql)
                             if cur1.rowcount>0:
                                 rows = cur1.fetchall()
@@ -170,8 +174,11 @@ class data_per_post:
                                     pulsante=row["pulsante"]
                                     valore=row["valore"]
                                     logger.debug("Check Light management IP %s valore %s pulsante %s " % (ip,valore,pulsante))
-                                    req = 'http://%s/api/output?valore=%s&pulsante=%s' % (ip,valore,pulsante)
+                                    req = 'http://%s/api/output?valore=%s&led=%s' % (ip,valore,pulsante)
+                                    logger.debug("111")
                                     urllib2.urlopen(req).read()
+                                    logger.debug("111222")
+                                    logger.debug(req)
                     else:
                         logger.debug("Received various data")
                 con.close()

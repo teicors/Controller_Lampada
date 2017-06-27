@@ -30,22 +30,22 @@ void loadConfig()
         LampCfg.sleeptime =     String((const char*)root["sleeptime"]);
         LampCfg.NetworkSSID =     String((const char*)root["ssid"]);
         LampCfg.NetworkPassword =     String((const char*)root["password"]);
-        Serial.print(LampCfg.lamp);
-        Serial.print(" 1 \n");
-        Serial.print(LampCfg.sleepenabled);
-        Serial.print(" 1 \n");
-        Serial.print(LampCfg.alarmenabled);
-        Serial.print(" 1 \n");
-        Serial.print(LampCfg.buzzerenabled);
-        Serial.print(" 1 \n");
-        Serial.print(LampCfg.alarmtime);
-        Serial.print(" 1 \n");
-        Serial.print(LampCfg.sleeptime);
-        Serial.print(" 1 \n");
-        Serial.print(LampCfg.NetworkSSID);
-        Serial.print(" 1 \n");
-        Serial.print(LampCfg.NetworkPassword);
-        Serial.print(" 1 \n");
+//        Serial.print(LampCfg.lamp);
+//        Serial.print(" 1 \n");
+//        Serial.print(LampCfg.sleepenabled);
+//        Serial.print(" 1 \n");
+//        Serial.print(LampCfg.alarmenabled);
+//        Serial.print(" 1 \n");
+//        Serial.print(LampCfg.buzzerenabled);
+//        Serial.print(" 1 \n");
+//        Serial.print(LampCfg.alarmtime);
+//        Serial.print(" 1 \n");
+//        Serial.print(LampCfg.sleeptime);
+//        Serial.print(" 1 \n");
+//        Serial.print(LampCfg.NetworkSSID);
+//        Serial.print(" 1 \n");
+//        Serial.print(LampCfg.NetworkPassword);
+//        Serial.print(" 1 \n");
         delete[] jsonString;
     }
     else
